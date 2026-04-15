@@ -25,6 +25,8 @@
 
 ---
 
+> **汉化说明**：本文档汉化自 [JuliusBrussee/caveman](https://github.com/JuliusBrussee/caveman) 原始英文 README。
+
 一个 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 技能/插件和 Codex 插件，让智能体像原始人一样说话——在保持完全技术准确性的同时，减少 **约 75% 的输出 token**。现在支持 [文言文模式](#文言文-wenyan-mode)、[简洁提交](#caveman-commit)、[单行代码审查](#caveman-review)，以及一个每会话可减少 **约 46% 输入 token** 的[压缩工具](#caveman-compress)。
 
 基于一个广为流传的观察：原始人语言能显著减少 LLM 的 token 使用量，且不丢失技术内容。所以我们将其改为一行安装。
