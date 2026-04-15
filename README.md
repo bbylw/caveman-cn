@@ -25,7 +25,7 @@
 
 ---
 
-一个 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 技能/插件和 Codex 插件，让代理像原始人一样说话——在保持完全技术准确性的同时，减少 **约 75% 的输出 token**。现在支持 [文言文模式](#文言文-wenyan-mode)、[简洁提交](#caveman-commit)、[单行代码审查](#caveman-review)，以及一个每会话可减少 **约 46% 输入 token** 的[压缩工具](#caveman-compress)。
+一个 [Claude Code](https://docs.anthropic.com/en/docs/claude-code) 技能/插件和 Codex 插件，让智能体像原始人一样说话——在保持完全技术准确性的同时，减少 **约 75% 的输出 token**。现在支持 [文言文模式](#文言文-wenyan-mode)、[简洁提交](#caveman-commit)、[单行代码审查](#caveman-review)，以及一个每会话可减少 **约 46% 输入 token** 的[压缩工具](#caveman-compress)。
 
 基于一个广为流传的观察：原始人语言能显著减少 LLM 的 token 使用量，且不丢失技术内容。所以我们将其改为一行安装。
 
@@ -122,9 +122,9 @@
 
 ## 安装
 
-选择你的代理。一条命令。完成。
+选择你的智能体。一条命令。完成。
 
-| 代理 | 安装 |
+| 智能体 | 安装 |
 |-------|---------|
 | **Claude Code** | `claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman` |
 | **Codex** | 克隆仓库 → `/plugins` → 搜索 "Caveman" → 安装 |
@@ -139,7 +139,7 @@
 
 ### 你将获得
 
-Claude Code、Gemini CLI 和下方的仓库本地 Codex 设置内置了自动激活功能。`npx skills add` 为其他代理安装技能，但**不会**安装仓库规则/指令文件，因此除非你添加下面的常驻片段，否则 Caveman 不会在那里自动启动。
+Claude Code、Gemini CLI 和下方的仓库本地 Codex 设置内置了自动激活功能。`npx skills add` 为其他智能体安装技能，但**不会**安装仓库规则/指令文件，因此除非你添加下面的常驻片段，否则 Caveman 不会在那里自动启动。
 
 | 功能 | Claude Code | Codex | Gemini CLI | Cursor | Windsurf | Cline | Copilot |
 |---------|:-----------:|:-----:|:----------:|:------:|:--------:|:-----:|:-------:|
@@ -154,10 +154,10 @@ Claude Code、Gemini CLI 和下方的仓库本地 Codex 设置内置了自动激
 | caveman-help | Y | — | Y | Y | Y | Y | Y |
 
 > [!NOTE]
-> 自动激活在不同代理中的工作方式不同：Claude Code 使用 SessionStart hooks，此仓库的 Codex 自用设置使用 `.codex/hooks.json`，Gemini 使用上下文文件。Cursor/Windsurf/Cline/Copilot 可以设置为常驻，但 `npx skills add` 仅安装技能，不安装仓库规则/指令文件。
+> 自动激活在不同智能体中的工作方式不同：Claude Code 使用 SessionStart hooks，此仓库的 Codex 自用设置使用 `.codex/hooks.json`，Gemini 使用上下文文件。Cursor/Windsurf/Cline/Copilot 可以设置为常驻，但 `npx skills add` 仅安装技能，不安装仓库规则/指令文件。
 >
 > ¹ Codex 使用 `$caveman` 语法，而不是 `/caveman`。此仓库附带 `.codex/hooks.json`，因此在此仓库内运行 Codex 时 caveman 会自动启动。已安装的插件本身提供 `$caveman`；如果你想在其他仓库中也实现常驻行为，请将相同的 hook 复制到那里。caveman-commit 和 caveman-review 不在 Codex 插件包中 — 直接使用 SKILL.md 文件。
-> ² 如果需要会话开始时激活，请将下面的"想要常驻？"片段添加到这些代理的系统提示词或规则文件中。
+> ² 如果需要会话开始时激活，请将下面的"想要常驻？"片段添加到这些智能体的系统提示词或规则文件中。
 > ³ Cursor 和 Windsurf 接收包含所有强度级别的完整 SKILL.md。模式切换通过技能按需工作；没有斜杠命令。
 > ⁴ 在 Claude Code 中可用，但插件安装仅提示设置。当没有自定义 `statusLine` 时，独立的 `install.sh` / `install.ps1` 会自动配置它。
 
@@ -232,9 +232,9 @@ gemini extensions install https://github.com/JuliusBrussee/caveman
 <details>
 <summary><strong>Cursor / Windsurf / Cline / Copilot — 完整详情</strong></summary>
 
-`npx skills add` 仅安装技能文件 — 它**不会**安装代理的规则/指令文件，因此 caveman 不会自动启动。要实现常驻，请将下面的"想要常驻？"片段添加到你的代理规则或系统提示词中。
+`npx skills add` 仅安装技能文件 — 它**不会**安装智能体的规则/指令文件，因此 caveman 不会自动启动。要实现常驻，请将下面的"想要常驻？"片段添加到你的智能体规则或系统提示词中。
 
-| 代理 | 命令 | 未安装文件 | 模式切换 | 常驻位置 |
+| 智能体 | 命令 | 未安装文件 | 模式切换 | 常驻位置 |
 |-------|---------|--------------|:--------------:|--------------------|
 | Cursor | `npx skills add JuliusBrussee/caveman -a cursor` | `.cursor/rules/caveman.mdc` | Y | Cursor 规则 |
 | Windsurf | `npx skills add JuliusBrussee/caveman -a windsurf` | `.windsurf/rules/caveman.md` | Y | Windsurf 规则 |
@@ -243,17 +243,17 @@ gemini extensions install https://github.com/JuliusBrussee/caveman
 
 卸载：`npx skills remove caveman`
 
-Copilot 适用于聊天、编辑和编码代理。
+Copilot 适用于聊天、编辑和编码智能体。
 
 </details>
 
 <details>
-<summary><strong>其他代理（opencode、Roo、Amp、Goose、Kiro 等 40+ 个）</strong></summary>
+<summary><strong>其他智能体（opencode、Roo、Amp、Goose、Kiro 等 40+ 个）</strong></summary>
 
-[npx skills](https://github.com/vercel-labs/skills) 支持 40+ 个代理：
+[npx skills](https://github.com/vercel-labs/skills) 支持 40+ 个智能体：
 
 ```bash
-npx skills add JuliusBrussee/caveman           # 自动检测代理
+npx skills add JuliusBrussee/caveman           # 自动检测智能体
 npx skills add JuliusBrussee/caveman -a amp
 npx skills add JuliusBrussee/caveman -a augment
 npx skills add JuliusBrussee/caveman -a goose
@@ -266,9 +266,9 @@ npx skills add JuliusBrussee/caveman -a roo
 
 > **Windows 注意：** `npx skills` 默认使用符号链接。如果符号链接失败，添加 `--copy`：`npx skills add JuliusBrussee/caveman --copy`
 
-**重要：** 这些代理没有 hook 系统，因此 caveman 不会自动启动。说 `/caveman` 或 "talk like caveman" 来激活每个会话。
+**重要：** 这些智能体没有 hook 系统，因此 caveman 不会自动启动。说 `/caveman` 或 "talk like caveman" 来激活每个会话。
 
-**想要常驻？** 将此内容粘贴到你的代理系统提示词或规则文件中 — caveman 将从第一条消息开始激活，每个会话：
+**想要常驻？** 将此内容粘贴到你的智能体系统提示词或规则文件中 — caveman 将从第一条消息开始激活，每个会话：
 
 ```
 Terse like caveman. Technical substance exact. Only fluff die.
@@ -280,12 +280,12 @@ Code/commits/PRs: normal. Off: "stop caveman" / "normal mode".
 ```
 
 放置位置：
-| 代理 | 文件 |
+| 智能体 | 文件 |
 |-------|------|
 | opencode | `.config/opencode/AGENTS.md` |
 | Roo | `.roo/rules/caveman.md` |
 | Amp | 你的工作区系统提示词 |
-| 其他 | 你的代理系统提示词或规则文件 |
+| 其他 | 你的智能体系统提示词或规则文件 |
 
 </details>
 
