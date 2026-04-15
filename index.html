@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>caveman - 为什么用很多 token，少量就能搞定</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --rock-dark: #1a1a18;
+            --rock-mid: #2d2d2a;
+            --rock-light: #4a4a46;
+            --accent-orange: #d97757;
+            --accent-amber: #f59e0b;
+            --stone-gray: #8a8a85;
+            --text-primary: #faf9f5;
+            --text-secondary: #b0aea5;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Noto Serif SC', serif;
+            background: var(--rock-dark);
+            color: var(--text-primary);
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        
+        .font-mono {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        /* Texture overlay */
+        .texture-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            opacity: 0.03;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            z-index: 1000;
+        }
+        
+        /* Gradient backgrounds */
+        .gradient-cave {
+            background: radial-gradient(ellipse at top right, rgba(217, 119, 87, 0.15) 0%, transparent 50%),
+                        radial-gradient(ellipse at bottom left, rgba(245, 158, 11, 0.1) 0%, transparent 50%),
+                        var(--rock-dark);
+        }
+        
+        /* Animations */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+        
+        .animate-pulse-glow {
+            animation: pulse-glow 3s ease-in-out infinite;
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--rock-dark);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--rock-light);
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-orange);
+        }
+        
+        /* Card styles */
+        .cave-card {
+            background: rgba(45, 45, 42, 0.6);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(138, 138, 133, 0.2);
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .cave-card:hover {
+            border-color: rgba(217, 119, 87, 0.5);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        /* Code block */
+        .code-block {
+            background: rgba(26, 26, 24, 0.8);
+            border: 1px solid rgba(138, 138, 133, 0.3);
+            border-radius: 0.5rem;
+            overflow-x: auto;
+        }
+        
+        /* Badge styles */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+            background: rgba(217, 119, 87, 0.2);
+            border: 1px solid rgba(217, 119, 87, 0.3);
+            color: var(--accent-orange);
+        }
+        
+        /* Progress bar */
+        .progress-bar {
+            height: 8px;
+            background: var(--rock-mid);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent-orange), var(--accent-amber));
+            border-radius: 4px;
+            transition: width 1s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        /* Navigation */
+        .nav-link {
+            position: relative;
+            color: var(--text-secondary);
+            transition: color 0.3s ease;
+        }
+        
+        .nav-link:hover {
+            color: var(--text-primary);
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: -4px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: var(--accent-orange);
+            transition: width 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        /* Stone decoration */
+        .stone-pattern {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(217, 119, 87, 0.1) 0%, transparent 70%);
+            filter: blur(60px);
+            pointer-events: none;
+        }
+    </style>
+</head>
+<body class="gradient-cave">
+    <div class="texture-overlay"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-[#1a1a18]/80 backdrop-blur-md border-b border-[#4a4a46]/20">
+        <div class="max-w-7xl mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-3xl">🪨</span>
+                    <span class="text-xl font-bold tracking-tight">caveman</span>
+                </div>
+                <div class="hidden md:flex items-center gap-8">
+                    <a href="#comparison" class="nav-link text-sm">使用前后对比</a>
+                    <a href="#install" class="nav-link text-sm">安装</a>
+                    <a href="#levels" class="nav-link text-sm">强度级别</a>
+                    <a href="#skills" class="nav-link text-sm">技能</a>
+                    <a href="#benchmarks" class="nav-link text-sm">基准测试</a>
+                </div>
+                <a href="https://github.com/JuliusBrussee/caveman" target="_blank" class="badge">
+                    ⭐ GitHub
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="min-h-[100dvh] flex items-center justify-center relative px-6 pt-20">
+        <div class="stone-pattern top-20 right-20"></div>
+        <div class="stone-pattern bottom-20 left-20"></div>
+        
+        <div class="max-w-5xl mx-auto text-center relative z-10">
+            <div class="animate-float mb-8">
+                <span class="text-8xl md:text-9xl">🪨</span>
+            </div>
+            
+            <h1 class="text-5xl md:text-7xl font-black mb-6 tracking-tight" style="line-height: 1.1;">
+                caveman
+            </h1>
+            
+            <p class="text-xl md:text-2xl text-[#b0aea5] mb-8 font-light">
+                为什么用很多 token，少量就能搞定
+            </p>
+            
+            <div class="flex flex-wrap justify-center gap-4 mb-12">
+                <div class="badge">⭐ 1.2k+ Stars</div>
+                <div class="badge">📦 MIT License</div>
+                <div class="badge">🚀 75% Token 节省</div>
+            </div>
+            
+            <div class="max-w-3xl mx-auto">
+                <p class="text-lg text-[#8a8a85] leading-relaxed mb-8">
+                    一个 <strong class="text-[#d97757]">Claude Code</strong> 技能/插件和 Codex 插件，让智能体像原始人一样说话——在保持完全技术准确性的同时，减少约 <strong class="text-[#f59e0b]">75% 的输出 token</strong>。
+                </p>
+                
+                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                    <a href="#install" class="px-8 py-4 bg-[#d97757] hover:bg-[#c06646] text-white font-medium rounded-lg transition-all duration-300 transform hover:scale-105">
+                        立即安装 →
+                    </a>
+                    <a href="#comparison" class="px-8 py-4 border border-[#4a4a46] hover:border-[#d97757] text-[#b0aea5] hover:text-white font-medium rounded-lg transition-all duration-300">
+                        查看效果
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Comparison Section -->
+    <section id="comparison" class="py-24 px-6 relative">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tight">使用前后对比</h2>
+                <p class="text-[#8a8a85] text-lg">相同的修复。减少 75% 的文字。大脑依然强大。</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-8 mb-12">
+                <!-- Normal Claude -->
+                <div class="cave-card rounded-2xl p-6">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-2xl">🗣️</span>
+                        <h3 class="text-xl font-bold">普通 Claude</h3>
+                        <span class="badge ml-auto">69 tokens</span>
+                    </div>
+                    <div class="code-block p-4 font-mono text-sm text-[#b0aea5]">
+                        "The reason your React component is re-rendering is likely because you're creating a new object reference on each render cycle. When you pass an inline object as a prop, React's shallow comparison sees it as a different object every time, which triggers a re-render. I'd recommend using useMemo to memoize the object."
+                    </div>
+                </div>
+                
+                <!-- Caveman Claude -->
+                <div class="cave-card rounded-2xl p-6 border-[#d97757]/30">
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="text-2xl">🪨</span>
+                        <h3 class="text-xl font-bold text-[#d97757]">原始人 Claude</h3>
+                        <span class="badge ml-auto bg-[#d97757]/30 border-[#d97757]/50">19 tokens</span>
+                    </div>
+                    <div class="code-block p-4 font-mono text-sm text-[#faf9f5]">
+                        "New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="cave-card rounded-xl p-6 text-center">
+                    <div class="text-3xl font-black text-[#d97757] mb-2">75%</div>
+                    <div class="text-sm text-[#8a8a85]">节省 TOKEN</div>
+                    <div class="progress-bar mt-3">
+                        <div class="progress-fill" style="width: 75%"></div>
+                    </div>
+                </div>
+                <div class="cave-card rounded-xl p-6 text-center">
+                    <div class="text-3xl font-black text-[#f59e0b] mb-2">100%</div>
+                    <div class="text-sm text-[#8a8a85]">技术准确性</div>
+                    <div class="progress-bar mt-3">
+                        <div class="progress-fill" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="cave-card rounded-xl p-6 text-center">
+                    <div class="text-3xl font-black text-[#788c5d] mb-2">~3x</div>
+                    <div class="text-sm text-[#8a8a85]">速度提升</div>
+                    <div class="progress-bar mt-3">
+                        <div class="progress-fill" style="width: 66%"></div>
+                    </div>
+                </div>
+                <div class="cave-card rounded-xl p-6 text-center">
+                    <div class="text-3xl font-black text-[#6a9bcc] mb-2">OOG</div>
+                    <div class="text-sm text-[#8a8a85]">氛围</div>
+                    <div class="progress-bar mt-3">
+                        <div class="progress-fill" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Intensity Levels -->
+    <section id="levels" class="py-24 px-6 bg-[#2d2d2a]/30">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tight">选择你的原始程度</h2>
+                <p class="text-[#8a8a85] text-lg">相同的答案。你决定说多少字。</p>
+            </div>
+            
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <!-- Lite -->
+                <div class="cave-card rounded-2xl p-6">
+                    <div class="text-3xl mb-4">🪶</div>
+                    <h3 class="text-xl font-bold mb-3">轻量级</h3>
+                    <div class="code-block p-3 font-mono text-xs text-[#b0aea5] mb-4">
+                        "Your component re-renders because you create a new object reference each render. Inline object props fail shallow comparison every time. Wrap it in `useMemo`."
+                    </div>
+                    <code class="text-xs text-[#d97757]">/caveman lite</code>
+                </div>
+                
+                <!-- Full -->
+                <div class="cave-card rounded-2xl p-6 border-[#d97757]/30">
+                    <div class="text-3xl mb-4">🪨</div>
+                    <h3 class="text-xl font-bold mb-3 text-[#d97757]">完整</h3>
+                    <div class="code-block p-3 font-mono text-xs text-[#faf9f5] mb-4">
+                        "New object ref each render. Inline object prop = new ref = re-render. Wrap in `useMemo`."
+                    </div>
+                    <code class="text-xs text-[#d97757]">/caveman full</code>
+                </div>
+                
+                <!-- Ultra -->
+                <div class="cave-card rounded-2xl p-6">
+                    <div class="text-3xl mb-4">🔥</div>
+                    <h3 class="text-xl font-bold mb-3">极限</h3>
+                    <div class="code-block p-3 font-mono text-xs text-[#b0aea5] mb-4">
+                        "Inline obj prop → new ref → re-render. `useMemo`."
+                    </div>
+                    <code class="text-xs text-[#d97757]">/caveman ultra</code>
+                </div>
+                
+                <!-- Wenyan -->
+                <div class="cave-card rounded-2xl p-6">
+                    <div class="text-3xl mb-4">📜</div>
+                    <h3 class="text-xl font-bold mb-3">文言文</h3>
+                    <div class="code-block p-3 font-mono text-xs text-[#b0aea5] mb-4">
+                        "物出新參照，致重繪。useMemo Wrap之。"
+                    </div>
+                    <code class="text-xs text-[#d97757]">/caveman wenyan</code>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation -->
+    <section id="install" class="py-24 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tight">安装</h2>
+                <p class="text-[#8a8a85] text-lg">选择你的智能体。一条命令。完成。</p>
+            </div>
+            
+            <div class="space-y-4">
+                <!-- Claude Code -->
+                <div class="cave-card rounded-xl p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div class="flex items-center gap-3 min-w-[200px]">
+                            <span class="text-2xl">🤖</span>
+                            <span class="font-bold">Claude Code</span>
+                        </div>
+                        <div class="flex-1 code-block p-4 font-mono text-sm text-[#b0aea5]">
+                            claude plugin marketplace add JuliusBrussee/caveman && claude plugin install caveman@caveman
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Cursor -->
+                <div class="cave-card rounded-xl p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div class="flex items-center gap-3 min-w-[200px]">
+                            <span class="text-2xl">👆</span>
+                            <span class="font-bold">Cursor</span>
+                        </div>
+                        <div class="flex-1 code-block p-4 font-mono text-sm text-[#b0aea5]">
+                            npx skills add JuliusBrussee/caveman -a cursor
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Windsurf -->
+                <div class="cave-card rounded-xl p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div class="flex items-center gap-3 min-w-[200px]">
+                            <span class="text-2xl">🌊</span>
+                            <span class="font-bold">Windsurf</span>
+                        </div>
+                        <div class="flex-1 code-block p-4 font-mono text-sm text-[#b0aea5]">
+                            npx skills add JuliusBrussee/caveman -a windsurf
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Gemini CLI -->
+                <div class="cave-card rounded-xl p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div class="flex items-center gap-3 min-w-[200px]">
+                            <span class="text-2xl">♊</span>
+                            <span class="font-bold">Gemini CLI</span>
+                        </div>
+                        <div class="flex-1 code-block p-4 font-mono text-sm text-[#b0aea5]">
+                            gemini extensions install https://github.com/JuliusBrussee/caveman
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Codex -->
+                <div class="cave-card rounded-xl p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div class="flex items-center gap-3 min-w-[200px]">
+                            <span class="text-2xl">📖</span>
+                            <span class="font-bold">Codex</span>
+                        </div>
+                        <div class="flex-1 code-block p-4 font-mono text-sm text-[#b0aea5]">
+                            克隆仓库 → /plugins → 搜索 "Caveman" → 安装
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Others -->
+                <div class="cave-card rounded-xl p-6">
+                    <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                        <div class="flex items-center gap-3 min-w-[200px]">
+                            <span class="text-2xl">📦</span>
+                            <span class="font-bold">其他 (40+)</span>
+                        </div>
+                        <div class="flex-1 code-block p-4 font-mono text-sm text-[#b0aea5]">
+                            npx skills add JuliusBrussee/caveman
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Skills -->
+    <section id="skills" class="py-24 px-6 bg-[#2d2d2a]/30">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tight">Caveman 技能</h2>
+                <p class="text-[#8a8a85] text-lg">不止是说话方式。更多强大功能。</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-6">
+                <!-- caveman-commit -->
+                <div class="cave-card rounded-2xl p-8">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[#d97757]/20 flex items-center justify-center text-2xl">
+                            📝
+                        </div>
+                        <h3 class="text-2xl font-bold">caveman-commit</h3>
+                    </div>
+                    <p class="text-[#8a8a85] mb-4">简洁的提交消息。Conventional Commits。≤50 字符的主题。原因重于内容。</p>
+                    <code class="text-sm text-[#d97757] font-mono">/caveman-commit</code>
+                </div>
+                
+                <!-- caveman-review -->
+                <div class="cave-card rounded-2xl p-8">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[#f59e0b]/20 flex items-center justify-center text-2xl">
+                            🔍
+                        </div>
+                        <h3 class="text-2xl font-bold">caveman-review</h3>
+                    </div>
+                    <p class="text-[#8a8a85] mb-4">单行 PR 评论：L42: 🔴 bug: user null. Add guard. 没有废话。</p>
+                    <code class="text-sm text-[#d97757] font-mono">/caveman-review</code>
+                </div>
+                
+                <!-- caveman-compress -->
+                <div class="cave-card rounded-2xl p-8 md:col-span-2">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[#788c5d]/20 flex items-center justify-center text-2xl">
+                            🗜️
+                        </div>
+                        <h3 class="text-2xl font-bold">caveman-compress</h3>
+                    </div>
+                    <p class="text-[#8a8a85] mb-4">caveman 让 Claude <em>说话</em>时使用更少的 token。<strong>Compress</strong> 让 Claude <em>阅读</em>时使用更少的 token。每会话减少约 46% 输入 token。</p>
+                    <code class="text-sm text-[#d97757] font-mono">/caveman:compress CLAUDE.md</code>
+                </div>
+                
+                <!-- caveman-help -->
+                <div class="cave-card rounded-2xl p-8">
+                    <div class="flex items-center gap-4 mb-4">
+                        <div class="w-12 h-12 rounded-xl bg-[#6a9bcc]/20 flex items-center justify-center text-2xl">
+                            ❓
+                        </div>
+                        <h3 class="text-2xl font-bold">caveman-help</h3>
+                    </div>
+                    <p class="text-[#8a8a85] mb-4">快速参考卡。所有模式、技能、命令，一个命令即可获取。</p>
+                    <code class="text-sm text-[#d97757] font-mono">/caveman-help</code>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benchmarks -->
+    <section id="benchmarks" class="py-24 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-4xl md:text-5xl font-black mb-4 tracking-tight">基准测试</h2>
+                <p class="text-[#8a8a85] text-lg">来自 Claude API 的真实 token 计数</p>
+            </div>
+            
+            <div class="cave-card rounded-2xl p-8 overflow-x-auto">
+                <table class="w-full min-w-[600px]">
+                    <thead>
+                        <tr class="border-b border-[#4a4a46]/30">
+                            <th class="text-left py-4 px-4 font-bold text-[#b0aea5]">任务</th>
+                            <th class="text-right py-4 px-4 font-bold text-[#b0aea5]">普通</th>
+                            <th class="text-right py-4 px-4 font-bold text-[#b0aea5]">Caveman</th>
+                            <th class="text-right py-4 px-4 font-bold text-[#d97757]">节省</th>
+                        </tr>
+                    </thead>
+                    <tbody class="font-mono text-sm">
+                        <tr class="border-b border-[#4a4a46]/20">
+                            <td class="py-4 px-4">解释 React 重渲染 bug</td>
+                            <td class="text-right py-4 px-4 text-[#8a8a85]">1180</td>
+                            <td class="text-right py-4 px-4 text-[#faf9f5]">159</td>
+                            <td class="text-right py-4 px-4 text-[#d97757] font-bold">87%</td>
+                        </tr>
+                        <tr class="border-b border-[#4a4a46]/20">
+                            <td class="py-4 px-4">修复认证中间件 token 过期</td>
+                            <td class="text-right py-4 px-4 text-[#8a8a85]">704</td>
+                            <td class="text-right py-4 px-4 text-[#faf9f5]">121</td>
+                            <td class="text-right py-4 px-4 text-[#d97757] font-bold">83%</td>
+                        </tr>
+                        <tr class="border-b border-[#4a4a46]/20">
+                            <td class="py-4 px-4">设置 PostgreSQL 连接池</td>
+                            <td class="text-right py-4 px-4 text-[#8a8a85]">2347</td>
+                            <td class="text-right py-4 px-4 text-[#faf9f5]">380</td>
+                            <td class="text-right py-4 px-4 text-[#d97757] font-bold">84%</td>
+                        </tr>
+                        <tr class="border-b border-[#4a4a46]/20">
+                            <td class="py-4 px-4">Docker 多阶段构建</td>
+                            <td class="text-right py-4 px-4 text-[#8a8a85]">1042</td>
+                            <td class="text-right py-4 px-4 text-[#faf9f5]">290</td>
+                            <td class="text-right py-4 px-4 text-[#d97757] font-bold">72%</td>
+                        </tr>
+                        <tr class="border-b border-[#4a4a46]/20">
+                            <td class="py-4 px-4">实现 React 错误边界</td>
+                            <td class="text-right py-4 px-4 text-[#8a8a85]">3454</td>
+                            <td class="text-right py-4 px-4 text-[#faf9f5]">456</td>
+                            <td class="text-right py-4 px-4 text-[#d97757] font-bold">87%</td>
+                        </tr>
+                        <tr class="bg-[#d97757]/10">
+                            <td class="py-4 px-4 font-bold">平均</td>
+                            <td class="text-right py-4 px-4 text-[#8a8a85]">1214</td>
+                            <td class="text-right py-4 px-4 text-[#faf9f5]">294</td>
+                            <td class="text-right py-4 px-4 text-[#d97757] font-bold">65%</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <p class="text-center text-[#8a8a85] mt-6 text-sm">
+                范围：跨提示词节省 22%–87%
+            </p>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="py-24 px-6 bg-gradient-to-r from-[#d97757]/20 to-[#f59e0b]/20">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-4xl md:text-5xl font-black mb-6 tracking-tight">
+                开始节省 Token
+            </h2>
+            <p class="text-xl text-[#8a8a85] mb-8">
+                如果 caveman 为你节省了大量 token、大量金钱 — 请留下大量星星。⭐
+            </p>
+            <a href="https://github.com/JuliusBrussee/caveman" target="_blank" class="inline-flex items-center gap-2 px-8 py-4 bg-[#d97757] hover:bg-[#c06646] text-white font-medium rounded-lg transition-all duration-300 transform hover:scale-105">
+                <span>⭐</span>
+                <span>给项目点星</span>
+            </a>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-6 border-t border-[#4a4a46]/20">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-3">
+                    <span class="text-2xl">🪨</span>
+                    <span class="font-bold">caveman</span>
+                </div>
+                <p class="text-[#8a8a85] text-sm">
+                    MIT — 像开阔平原上的大量猛犸象一样自由。
+                </p>
+                <div class="flex items-center gap-6">
+                    <a href="https://github.com/JuliusBrussee/caveman" target="_blank" class="text-[#8a8a85] hover:text-[#d97757] transition-colors">
+                        GitHub
+                    </a>
+                    <a href="https://github.com/JuliusBrussee/cavekit" target="_blank" class="text-[#8a8a85] hover:text-[#d97757] transition-colors">
+                        Cavekit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Smooth scroll for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Animate progress bars on scroll
+        const observerOptions = {
+            threshold: 0.5
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.width = entry.target.dataset.width || entry.target.style.width;
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.progress-fill').forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            bar.dataset.width = width;
+            observer.observe(bar);
+        });
+
+        // Add subtle parallax effect to stone patterns
+        document.addEventListener('mousemove', (e) => {
+            const patterns = document.querySelectorAll('.stone-pattern');
+            const x = e.clientX / window.innerWidth;
+            const y = e.clientY / window.innerHeight;
+            
+            patterns.forEach((pattern, index) => {
+                const speed = (index + 1) * 20;
+                pattern.style.transform = `translate(${x * speed}px, ${y * speed}px)`;
+            });
+        });
+    </script>
+</body>
+</html>
